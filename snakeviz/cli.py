@@ -61,7 +61,13 @@ def build_parser():
 
     parser.add_argument('-s', '--server', action="store_true", default=False,
                         help='start SnakeViz in server-only mode--'
-                             'no attempt will be made to open a browser')
+                        'no attempt will be made to open a browser')
+
+
+    parser.add_argument('--prefix', metavar='URL_PREFIX', default='',
+                        help='URL prefix for hosting under a subpath '
+                        '(e.g., "user-redirect/proxy/8080/"). '
+                        'Default is empty (root path).')
 
     return parser
 
@@ -99,14 +105,22 @@ def main(argv=None):
     port = args.port
 
     if not 0 <= port <= 65535:
-        parser.error('invalid port number %d: use a port between 0 and 65535'
-                     % port)
+        parser.error("invalid port number %d: use a port between 0 and 65535" % port)
+
+    # Normalize the URL prefix
+    url_prefix = args.prefix
+    if url_prefix and not url_prefix.startswith("/"):
+        url_prefix = "/" + url_prefix
+    if url_prefix and not url_prefix.endswith("/"):
+        url_prefix = url_prefix + "/"
 
     # Go ahead and import the tornado app and start it; we do an inline import
     # here to avoid the extra overhead when just running the cli for --help and
     # the like
 
-    from .main import app
+    from .main import make_app
+
+    app = make_app(url_prefix or "/")
     import tornado.ioloop
 
     # As seen in IPython:
@@ -125,9 +139,10 @@ def main(argv=None):
         print('No available port found.')
         return 1
 
-    url = f"http://{hostname}:{port}/snakeviz/{filename}"
-    print('snakeviz web server started on %s:%d; enter Ctrl-C to exit' %
-           (hostname, port))
+    url = f"http://{hostname}:{port}{url_prefix}snakeviz/{filename}"
+    print(
+        "snakeviz web server started on %s:%d; enter Ctrl-C to exit" % (hostname, port)
+    )
     print(url)
 
     if not args.server:

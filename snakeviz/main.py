@@ -10,15 +10,11 @@ import tornado.web
 
 from .stats import table_rows, json_stats
 
-settings = {
-    'static_path': os.path.join(os.path.dirname(__file__), 'static'),
-    'template_path': os.path.join(os.path.dirname(__file__), 'templates'),
-    'debug': True,
-    'gzip': True
-}
-
 
 class VizHandler(tornado.web.RequestHandler):
+    def initialize(self, url_prefix="/"):
+        self.url_prefix = url_prefix
+
     def get(self, profile_name):
         abspath = os.path.abspath(profile_name)
         if os.path.isdir(abspath):
@@ -27,10 +23,14 @@ class VizHandler(tornado.web.RequestHandler):
             try:
                 s = Stats(profile_name)
             except:
-                raise RuntimeError('Could not read %s.' % profile_name)
+                raise RuntimeError("Could not read %s." % profile_name)
             self.render(
-                'viz.html', profile_name=profile_name,
-                table_rows=table_rows(s), callees=json_stats(s))
+                "viz.html",
+                profile_name=profile_name,
+                table_rows=table_rows(s),
+                callees=json_stats(s),
+                url_prefix=self.url_prefix,
+            )
 
     def _list_dir(self, path):
         """
@@ -38,32 +38,53 @@ class VizHandler(tornado.web.RequestHandler):
 
         """
         entries = os.listdir(path)
-        dir_entries = [[[
-            '..',
-            quote(os.path.normpath(os.path.join(path, '..')), safe='')
-        ]]]
+        dir_entries = [
+            [["..", quote(os.path.normpath(os.path.join(path, "..")), safe="")]]
+        ]
         for name in entries:
-            if name.startswith('.'):
+            if name.startswith("."):
                 # skip invisible files/directories
                 continue
             fullname = os.path.join(path, name)
             displayname = linkname = name
             # Append / for directories or @ for symbolic links
             if os.path.isdir(fullname):
-                displayname += '/'
+                displayname += "/"
             if os.path.islink(fullname):
-                displayname += '@'
+                displayname += "@"
             dir_entries.append(
-                [[displayname, quote(os.path.join(path, linkname), safe='')]])
+                [[displayname, quote(os.path.join(path, linkname), safe="")]]
+            )
 
         self.render(
-            'dir.html', dir_name=path, dir_entries=json.dumps(dir_entries))
+            "dir.html",
+            dir_name=path,
+            dir_entries=json.dumps(dir_entries),
+            url_prefix=self.url_prefix,
+        )
 
 
-handlers = [(r'/snakeviz/(.*)', VizHandler)]
+def make_app(url_prefix="/"):
+    settings = {
+        "static_path": os.path.join(os.path.dirname(__file__), "static"),
+        "template_path": os.path.join(os.path.dirname(__file__), "templates"),
+        "debug": True,
+        "gzip": True,
+    }
 
-app = tornado.web.Application(handlers, **settings)
+    handlers = [
+        (url_prefix + r"snakeviz/(.*)", VizHandler, {"url_prefix": url_prefix}),
+        (
+            url_prefix + r"static/(.*)",
+            tornado.web.StaticFileHandler,
+            {"path": settings["static_path"]},
+        ),
+    ]
 
-if __name__ == '__main__':
+    return tornado.web.Application(handlers, **settings)
+
+
+if __name__ == "__main__":
+    app = make_app()
     app.listen(8080)
     tornado.ioloop.IOLoop.instance().start()

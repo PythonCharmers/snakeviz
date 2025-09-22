@@ -6,10 +6,10 @@
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <link href="/static/snakeviz.css" rel="stylesheet">
+    <link href="{{ url_prefix }}static/snakeviz.css" rel="stylesheet">
 
     <!-- DataTables CSS -->
-    <link href="/static/vendor/jquery.dataTables.min.css" rel="stylesheet">
+    <link href="{{ url_prefix }}static/vendor/jquery.dataTables.min.css" rel="stylesheet">
   </head>
 
   <body>
@@ -32,8 +32,8 @@
     ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
     <!-- Vendor JS -->
-    <script src="/static/vendor/jquery-3.2.1.min.js"></script>
-    <script src="/static/vendor/jquery.dataTables.min.js"></script>
+    <script src="{{ url_prefix }}static/vendor/jquery-3.2.1.min.js"></script>
+    <script src="{{ url_prefix }}static/vendor/jquery.dataTables.min.js"></script>
 
     <!-- SnakeViz JS -->
     <script>
